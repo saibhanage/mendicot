@@ -31,3 +31,57 @@ button {
 button:hover {
   background-color: #d1304b;
 }
+/* Add this to your existing App.css */
+
+.game-area {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.hand-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #0f3460; /* A nice dark green/blue felt color */
+  border-radius: 15px;
+}
+
+.playing-card {
+  width: 80px;
+  height: 120px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+  user-select: none;
+}
+
+.playing-card:hover {
+  transform: translateY(-15px);
+}
+
+.card-top {
+  text-align: left;
+  font-size: 1.2rem;
+}
+
+.card-middle {
+  text-align: center;
+  font-size: 2.5rem;
+}
+
+.card-bottom {
+  text-align: right;
+  font-size: 1.2rem;
+  transform: rotate(180deg); /* Flips the bottom number upside down! */
+}

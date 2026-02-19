@@ -2,77 +2,97 @@ import { useEffect, useState } from 'react'
 import { io } from 'socket.io-client'
 import './App.css'
 
-// Connect to the backend server
 const socket = io('http://localhost:3001')
 
 function App() {
-  // Socket Connection State
+  // --- STATE ---
   const [isConnected, setIsConnected] = useState(socket.connected)
-  
-  // UI & Game State
-  const [view, setView] = useState('landing') // views: 'landing', 'create', 'join', 'table'
+  const [view, setView] = useState('landing') // 'landing', 'create', 'join', 'table'
   const [nickname, setNickname] = useState('')
   const [roomCode, setRoomCode] = useState('')
-  const [playersInRoom, setPlayersInRoom] = useState(0)
+  
+  // Real-time Game State
+  const [playersList, setPlayersList] = useState([])
+  const [hand, setHand] = useState([])
+  const [tableCards, setTableCards] = useState([])
 
-  // Listeners for real-time events
+  // --- SOCKET LISTENERS ---
   useEffect(() => {
     socket.on('connect', () => setIsConnected(true))
     socket.on('disconnect', () => setIsConnected(false))
 
-    // When someone joins the room, increment our player counter
-    socket.on('playerJoined', () => {
-      setPlayersInRoom(prev => prev + 1)
+    // Update the seats when people join/leave
+    socket.on('updatePlayers', (players) => {
+      setPlayersList(players)
     })
 
-    // Cleanup listeners when component unmounts
+    // Receive 13 cards from the dealer
+    socket.on('receiveCards', (cards) => {
+      setHand(cards)
+    })
+
+    // See cards played to the center table
+    socket.on('updateTable', (tableData) => {
+      setTableCards(tableData)
+    })
+
+    // Handle errors (like trying to start with 1 person)
+    socket.on('errorMsg', (msg) => {
+      alert(msg)
+    })
+
     return () => {
       socket.off('connect')
       socket.off('disconnect')
-      socket.off('playerJoined')
+      socket.off('updatePlayers')
+      socket.off('receiveCards')
+      socket.off('updateTable')
+      socket.off('errorMsg')
     }
   }, [])
 
-  // Action: Create a brand new game table
+  // --- ACTIONS ---
   const handleCreateGame = () => {
     if (!nickname) return alert("Please enter a nickname!")
-    
-    // Generate a random 6-character room code (e.g., "X7B9WQ")
     const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
     setRoomCode(newCode)
-    
-    socket.emit('joinRoom', newCode)
+    socket.emit('joinRoom', { roomCode: newCode, nickname })
     setView('table')
-    setPlayersInRoom(1) // You are the first person in the room
   }
 
-  // Action: Join an existing game table
   const handleJoinGame = () => {
     if (!nickname || !roomCode) return alert("Enter nickname and room code!")
-    
-    socket.emit('joinRoom', roomCode)
+    socket.emit('joinRoom', { roomCode, nickname })
     setView('table')
-    setPlayersInRoom(2) // Fake it for the UI for now
   }
 
-  // Action: Copy link to clipboard
   const copyInviteLink = () => {
     navigator.clipboard.writeText(`Join my Mendicot game! Room Code: ${roomCode}`)
     alert("Copied to clipboard!")
   }
 
-  // FAKE PLAYERS for UI testing 
-  // (Try adding more names to this array up to 12 to see the table dynamically resize!)
-  const dummyPlayers = [
-    { id: 1, name: nickname || 'You' },
-    { id: 2, name: 'Alex' },
-    { id: 3, name: 'Sam' },
-    { id: 4, name: 'Jordan' },
-    { id: 5, name: 'Taylor' },
-    { id: 6, name: 'Casey' },
-    { id: 7, name: 'Riley' },
-    { id: 8, name: 'Morgan' }
-  ];
+  const startGame = () => {
+    socket.emit('startGame', roomCode)
+  }
+
+  const playCard = (cardToPlay) => {
+    // 1. Remove from local hand visually immediately
+    setHand(hand.filter(c => !(c.suit === cardToPlay.suit && c.value === cardToPlay.value)))
+    // 2. Tell the server to broadcast it to the table
+    socket.emit('playCard', { roomCode, card: cardToPlay })
+  }
+
+  // --- HELPERS ---
+  const getSuitColor = (suit) => (suit === 'Hearts' || suit === 'Diamonds' ? '#ef4444' : '#111827')
+  const getSuitSymbol = (suit) => {
+    switch(suit) {
+      case 'Hearts': return '♥';
+      case 'Diamonds': return '♦';
+      case 'Clubs': return '♣';
+      case 'Spades': return '♠';
+      default: return '';
+    }
+  }
 
   return (
     <div className="app-container">
@@ -83,7 +103,7 @@ function App() {
         <span>{isConnected ? '🟢 Server Online' : '🔴 Server Offline'}</span>
       </div>
 
-      {/* VIEW 1: The Landing Page */}
+      {/* VIEW 1: Landing Page */}
       {view === 'landing' && (
         <div className="landing-container">
           <div className="action-card">
@@ -92,7 +112,6 @@ function App() {
               START A NEW GAME
             </button>
           </div>
-          
           <div className="action-card">
             <h2>play with the community in <strong>Clubs, Games and Freerolls</strong></h2>
             <button className="btn-secondary" onClick={() => setView('join')}>
@@ -102,12 +121,11 @@ function App() {
         </div>
       )}
 
-      {/* VIEW 2: The "Create" Menu */}
+      {/* VIEW 2: Create Menu */}
       {view === 'create' && (
         <div className="landing-container">
           <div className="action-card">
             <h3>N E W &nbsp; G A M E</h3>
-            <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Play free private online mendicot with your friends. No download needed.</p>
             <input 
               className="modern-input" 
               placeholder="Your Nickname" 
@@ -119,7 +137,7 @@ function App() {
         </div>
       )}
 
-      {/* VIEW 3: The "Join" Menu */}
+      {/* VIEW 3: Join Menu */}
       {view === 'join' && (
         <div className="landing-container">
           <div className="action-card">
@@ -143,48 +161,77 @@ function App() {
 
       {/* VIEW 4: The Game Table */}
       {view === 'table' && (
-        <div className="table-container">
+        <div className="table-container" style={{ flexDirection: 'column' }}>
+          
           <div className="poker-table">
             
-            {/* The "Waiting for others" popup box sitting on the table */}
-            {playersInRoom < 4 && (
+            {/* Modal in the center of the table (Only shows before cards are dealt) */}
+            {hand.length === 0 && (
               <div className="waiting-modal">
-                <h3>⏱ Waiting for others ({playersInRoom}/12)</h3>
-                <p>Share this code with your friends!</p>
-                <h2 style={{ letterSpacing: '5px', margin: '15px 0' }}>{roomCode}</h2>
-                <button className="btn-primary" onClick={copyInviteLink} style={{ padding: '10px 20px', fontSize: '1rem' }}>
+                <h3>Room: {roomCode}</h3>
+                <p>Players: {playersList.length}/12</p>
+                <button className="btn-secondary" onClick={copyInviteLink} style={{ padding: '8px 16px', fontSize: '0.9rem', marginBottom: '15px' }}>
                   COPY LINK
                 </button>
+                <br/>
+                {/* Show start game button if there are at least 2 people */}
+                {playersList.length >= 2 ? (
+                  <button className="btn-primary" onClick={startGame}>START GAME & DEAL</button>
+                ) : (
+                  <p style={{ color: '#666', fontSize: '0.9rem' }}>Waiting for more players to start...</p>
+                )}
               </div>
             )}
 
-            {/* DYNAMIC SEATING: Maps players perfectly around the oval table */}
-            {dummyPlayers.map((player, index) => {
-              // Mathematical calculation to distribute seats evenly in a circle
-              const totalPlayers = dummyPlayers.length;
-              // Start at top (-90 degrees / -Math.PI/2) and spread evenly
+            {/* The Center Trick Area (Shows cards played by players) */}
+            {tableCards.length > 0 && (
+              <div className="center-trick-area" style={{ display: 'flex', gap: '10px', zIndex: 10 }}>
+                {tableCards.map((card, index) => (
+                  <div key={index} className="playing-card" style={{ color: getSuitColor(card.suit), transform: 'scale(0.8)' }}>
+                    <div className="card-top">{card.value}</div>
+                    <div className="card-middle">{getSuitSymbol(card.suit)}</div>
+                    <div className="card-bottom">{card.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* DYNAMIC SEATING */}
+            {playersList.map((player, index) => {
+              const totalPlayers = playersList.length;
               const angle = (index / totalPlayers) * 2 * Math.PI - (Math.PI / 2);
-              
-              // 50 is center. Multiply by 50 to push them to the edge of the container
               const leftPos = 50 + 50 * Math.cos(angle);
               const topPos = 50 + 50 * Math.sin(angle);
 
               return (
-                <div 
-                  key={player.id} 
-                  className="table-seat"
-                  style={{ left: `${leftPos}%`, top: `${topPos}%` }}
-                >
+                <div key={player.id} className="table-seat" style={{ left: `${leftPos}%`, top: `${topPos}%` }}>
                   <div className="seat-avatar"></div>
                   <div className="seat-name">{player.name}</div>
                 </div>
               );
             })}
-
           </div>
+
+          {/* Player's Hand Area (Bottom of the screen) */}
+          {hand.length > 0 && (
+            <div className="hand-container" style={{ marginTop: '40px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px' }}>
+              {hand.map((card, index) => (
+                <div 
+                  key={index} 
+                  className="playing-card" 
+                  style={{ color: getSuitColor(card.suit) }}
+                  onClick={() => playCard(card)}
+                >
+                  <div className="card-top">{card.value}</div>
+                  <div className="card-middle">{getSuitSymbol(card.suit)}</div>
+                  <div className="card-bottom">{card.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
         </div>
       )}
-
     </div>
   )
 }

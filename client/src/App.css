@@ -169,3 +169,48 @@ input.modern-input:focus {
   letter-spacing: 0.5px;
   white-space: nowrap;
 }
+/* --- PLAYING CARDS --- */
+.playing-card {
+  width: 80px;
+  height: 120px;
+  background-color: white; /* This is what makes the card visible! */
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+/* Makes the card pop up when you hover over it in your hand */
+.playing-card:hover {
+  transform: translateY(-15px);
+}
+
+/* Stops the cards on the table from popping up when hovered */
+.center-trick-area .playing-card:hover {
+  transform: scale(0.8);
+  cursor: default;
+}
+
+.card-top {
+  text-align: left;
+  font-size: 1.2rem;
+}
+
+.card-middle {
+  text-align: center;
+  font-size: 2.5rem;
+}
+
+.card-bottom {
+  text-align: right;
+  font-size: 1.2rem;
+  transform: rotate(180deg); /* Flips the bottom number upside down */
+}

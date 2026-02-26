@@ -5,16 +5,23 @@ import './App.css'
 const socket = io('http://localhost:3001')
 
 function App() {
+  // --- STATE ---
   const [isConnected, setIsConnected] = useState(socket.connected)
   const [view, setView] = useState('landing') 
   const [nickname, setNickname] = useState('')
   const [roomCode, setRoomCode] = useState('')
   
+  // Real-time Game State
   const [playersList, setPlayersList] = useState([])
   const [hand, setHand] = useState([])
   const [tableCards, setTableCards] = useState([])
   const [currentTurnId, setCurrentTurnId] = useState('')
+  
+  // NEW STATES FOR SCORING AND TRUMP
+  const [scores, setScores] = useState({ A: 0, B: 0 })
+  const [trumpSuit, setTrumpSuit] = useState(null)
 
+  // --- SOCKET LISTENERS ---
   useEffect(() => {
     socket.on('connect', () => setIsConnected(true))
     socket.on('disconnect', () => setIsConnected(false))
@@ -22,14 +29,18 @@ function App() {
     socket.on('receiveCards', setHand)
     socket.on('updateTable', setTableCards)
     socket.on('turnUpdate', setCurrentTurnId)
+    socket.on('scoreUpdate', setScores)
+    socket.on('trumpUpdate', setTrumpSuit)
     socket.on('errorMsg', alert)
 
     return () => {
       socket.off('connect'); socket.off('disconnect'); socket.off('updatePlayers');
-      socket.off('receiveCards'); socket.off('updateTable'); socket.off('turnUpdate'); socket.off('errorMsg');
+      socket.off('receiveCards'); socket.off('updateTable'); socket.off('turnUpdate'); 
+      socket.off('scoreUpdate'); socket.off('trumpUpdate'); socket.off('errorMsg');
     }
   }, [])
 
+  // --- ACTIONS ---
   const handleCreateGame = () => {
     if (!nickname) return alert("Please enter a nickname!")
     const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -49,7 +60,6 @@ function App() {
     alert("Copied to clipboard!")
   }
 
-  // NEW: Action to pick a team
   const joinTeam = (teamName) => {
     socket.emit('joinTeam', { roomCode, team: teamName })
   }
@@ -58,16 +68,27 @@ function App() {
 
   const playCard = (cardToPlay) => {
     if (currentTurnId !== socket.id) return alert("Wait for your turn!")
+    
+    // Client-side rule enforcement: You MUST follow suit if you can
+    if (tableCards.length > 0) {
+      const leadSuit = tableCards[0].suit;
+      const hasLeadSuit = hand.some(c => c.suit === leadSuit);
+      
+      if (hasLeadSuit && cardToPlay.suit !== leadSuit) {
+        return alert(`You must play a ${leadSuit} because you have one!`);
+      }
+    }
+
     setHand(hand.filter(c => !(c.suit === cardToPlay.suit && c.value === cardToPlay.value)))
     socket.emit('playCard', { roomCode, card: cardToPlay })
   }
 
+  // --- HELPERS ---
   const getSuitColor = (suit) => (suit === 'Hearts' || suit === 'Diamonds' ? '#ef4444' : '#111827')
   const getSuitSymbol = (suit) => {
     switch(suit) { case 'Hearts': return '♥'; case 'Diamonds': return '♦'; case 'Clubs': return '♣'; case 'Spades': return '♠'; default: return ''; }
   }
 
-  // NEW: Interleave players so Team A and Team B sit in alternating seats
   const getSeatedPlayers = () => {
     const teamA = playersList.filter(p => p.team === 'A');
     const teamB = playersList.filter(p => p.team === 'B');
@@ -130,11 +151,26 @@ function App() {
           
           <div className="poker-table">
             
+            {/* SCOREBOARD */}
+            {hand.length > 0 && (
+              <div style={{ position: 'absolute', top: '20px', display: 'flex', gap: '20px', background: 'rgba(0,0,0,0.6)', padding: '10px 20px', borderRadius: '15px', zIndex: 10 }}>
+                <span style={{ color: '#ef4444', fontWeight: 'bold' }}>Team A (10s): {scores?.A || 0}</span>
+                <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>Team B (10s): {scores?.B || 0}</span>
+              </div>
+            )}
+
+            {/* TRUMP INDICATOR */}
+            {hand.length > 0 && trumpSuit && (
+              <div style={{ position: 'absolute', top: '70px', background: 'rgba(0,0,0,0.8)', padding: '5px 15px', borderRadius: '20px', border: `1px solid ${getSuitColor(trumpSuit)}`, zIndex: 10 }}>
+                Trump: <span style={{ color: getSuitColor(trumpSuit), fontSize: '1.2rem' }}>{getSuitSymbol(trumpSuit)}</span>
+              </div>
+            )}
+            
+            {/* WAITING MODAL / TEAM SELECTION */}
             {hand.length === 0 && (
               <div className="waiting-modal">
                 <h3>Room: {roomCode}</h3>
                 
-                {/* NEW: TEAM SELECTION UI */}
                 <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', margin: '20px 0' }}>
                   <div style={{ padding: '15px', border: '2px solid #ef4444', borderRadius: '10px' }}>
                     <h4 style={{ margin: '0 0 10px 0', color: '#ef4444' }}>Team A</h4>
@@ -157,6 +193,7 @@ function App() {
               </div>
             )}
 
+            {/* TABLE CARDS (THE TRICK) */}
             {tableCards.length > 0 && (
               <div className="center-trick-area" style={{ display: 'flex', gap: '10px', zIndex: 10 }}>
                 {tableCards.map((card, index) => (
@@ -169,18 +206,17 @@ function App() {
               </div>
             )}
 
-            {/* Render the mathematically seated players */}
+            {/* SEATING */}
             {seatedPlayers.map((player, index) => {
               const totalPlayers = seatedPlayers.length;
               const angle = (index / totalPlayers) * 2 * Math.PI - (Math.PI / 2);
               const leftPos = 50 + 50 * Math.cos(angle);
               const topPos = 50 + 50 * Math.sin(angle);
 
-              // Set border color based on team, but highlight in gold if it's their turn!
               let avatarBorder = '#555';
-              if (player.team === 'A') avatarBorder = '#ef4444'; // Red for Team A
-              if (player.team === 'B') avatarBorder = '#3b82f6'; // Blue for Team B
-              if (player.id === currentTurnId) avatarBorder = '#fbbf24'; // Gold if turn
+              if (player.team === 'A') avatarBorder = '#ef4444'; 
+              if (player.team === 'B') avatarBorder = '#3b82f6'; 
+              if (player.id === currentTurnId) avatarBorder = '#fbbf24'; 
 
               return (
                 <div key={player.id} className="table-seat" style={{ left: `${leftPos}%`, top: `${topPos}%` }}>
@@ -198,6 +234,7 @@ function App() {
             })}
           </div>
 
+          {/* PLAYER HAND */}
           {hand.length > 0 && (
             <div className="hand-container" style={{ marginTop: '40px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px' }}>
               {hand.map((card, index) => (

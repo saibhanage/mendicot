@@ -23,14 +23,16 @@ io.on('connection', (socket) => {
       rooms[roomCode] = { 
         players: [], table: [], currentTurnIndex: 0,
         teamAScore: 0, teamBScore: 0, trumpSuit: null,
-        trumpMakerId: null, // NEW: Remembers who cut the Hukum
-        tricksPlayed: 0     // NEW: Counts tricks to know when the hand is over
+        trumpMakerId: null, tricksPlayed: 0,
+        hostId: socket.id // NEW: The person who creates the room is the Host!
       };
     }
     
     const playerExists = rooms[roomCode].players.find(p => p.id === socket.id);
     if (!playerExists) rooms[roomCode].players.push({ id: socket.id, name: nickname, team: null });
+    
     io.to(roomCode).emit('updatePlayers', rooms[roomCode].players);
+    io.to(roomCode).emit('updateHost', rooms[roomCode].hostId); // NEW: Tell everyone who the host is
   });
 
   socket.on('joinTeam', ({ roomCode, team }) => {
@@ -44,6 +46,12 @@ io.on('connection', (socket) => {
   socket.on('startGame', (roomCode) => {
     if (!rooms[roomCode]) return;
     const room = rooms[roomCode];
+
+    // NEW SECURITY CHECK: Reject if anyone but the host tries to start the game
+    if (socket.id !== room.hostId) {
+      return socket.emit('errorMsg', 'Only the Host can start the game!');
+    }
+
     const playersInRoom = room.players;
     
     if (playersInRoom.filter(p => !p.team).length > 0) return socket.emit('errorMsg', 'Everyone must pick a team!');
@@ -77,12 +85,11 @@ io.on('connection', (socket) => {
     const activePlayerId = room.players[room.currentTurnIndex].id;
     if (socket.id !== activePlayerId) return socket.emit('errorMsg', "Wait for your turn!");
 
-    // DYNAMIC TRUMP (CUT HUKUM)
     if (room.table.length > 0 && room.trumpSuit === null) {
       const leadSuit = room.table[0].suit;
       if (card.suit !== leadSuit) {
         room.trumpSuit = card.suit;
-        room.trumpMakerId = socket.id; // Record who made the Trump!
+        room.trumpMakerId = socket.id; 
         io.to(roomCode).emit('trumpUpdate', room.trumpSuit);
       }
     }
@@ -90,7 +97,6 @@ io.on('connection', (socket) => {
     room.table.push({ ...card, playerId: socket.id });
     io.to(roomCode).emit('updateTable', room.table);
 
-    // TRICK COMPLETION
     if (room.table.length === room.players.length) {
       const winnerId = evaluateTrick(room.table, room.trumpSuit);
       const winner = room.players.find(p => p.id === winnerId);
@@ -106,33 +112,28 @@ io.on('connection', (socket) => {
         room.table = []; 
         room.tricksPlayed += 1;
         
-        // Calculate max tricks based on players (e.g., 52 cards / 4 players = 13 tricks)
         let totalCards = 52;
         if ([6, 8, 12].includes(room.players.length)) totalCards = 48;
         if (room.players.length === 10) totalCards = 50;
         const maxTricks = totalCards / room.players.length;
 
-        // END OF THE ENTIRE HAND LOGIC
         if (room.tricksPlayed >= maxTricks) {
           let msg = room.teamAScore > room.teamBScore ? "Team A wins the hand!" : room.teamBScore > room.teamAScore ? "Team B wins the hand!" : "It's a tie!";
-          io.to(roomCode).emit('roundOver', msg); // Tell the UI the hand is over
+          io.to(roomCode).emit('roundOver', msg); 
 
-          // Wait 5 seconds to show the message, then deal a new hand automatically
           setTimeout(() => {
             room.tricksPlayed = 0; room.teamAScore = 0; room.teamBScore = 0; room.trumpSuit = null;
             io.to(roomCode).emit('scoreUpdate', { A: 0, B: 0 });
             io.to(roomCode).emit('trumpUpdate', null);
 
-            // SET THE TURN TO THE TRUMP MAKER
             if (room.trumpMakerId) {
               const makerIndex = room.players.findIndex(p => p.id === room.trumpMakerId);
               room.currentTurnIndex = makerIndex !== -1 ? makerIndex : 0;
             } else {
               room.currentTurnIndex = 0;
             }
-            room.trumpMakerId = null; // Reset for the next game
+            room.trumpMakerId = null; 
 
-            // Deal fresh cards
             const playerIds = room.players.map(p => p.id);
             const hands = dealCards(playerIds);
             playerIds.forEach(playerId => io.to(playerId).emit('receiveCards', hands[playerId]));
@@ -142,7 +143,6 @@ io.on('connection', (socket) => {
           }, 5000);
 
         } else {
-          // Normal trick is over, winner of trick leads next
           room.currentTurnIndex = room.players.findIndex(p => p.id === winnerId);
           io.to(roomCode).emit('updateTable', room.table);
           io.to(roomCode).emit('turnUpdate', room.players[room.currentTurnIndex].id);
@@ -159,10 +159,19 @@ io.on('connection', (socket) => {
     for (const roomCode in rooms) {
       const room = rooms[roomCode];
       const playerIndex = room.players.findIndex(p => p.id === socket.id);
+      
       if (playerIndex !== -1) {
         room.players.splice(playerIndex, 1);
-        io.to(roomCode).emit('updatePlayers', room.players);
-        if (room.players.length === 0) delete rooms[roomCode];
+        
+        // NEW: If the room is empty, delete it. If the host leaves, pass host to the next person!
+        if (room.players.length === 0) {
+          delete rooms[roomCode];
+        } else if (room.hostId === socket.id) {
+          room.hostId = room.players[0].id;
+          io.to(roomCode).emit('updateHost', room.hostId);
+        } else {
+          io.to(roomCode).emit('updatePlayers', room.players);
+        }
         break; 
       }
     }

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { io } from 'socket.io-client'
 import './App.css'
 
-const socket = io('http://localhost:3001')
+const SOCKET_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+const socket = io(SOCKET_URL);
 
 function App() {
   const [isConnected, setIsConnected] = useState(socket.connected)

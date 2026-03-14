@@ -94,6 +94,9 @@ io.on('connection', (socket) => {
         room.trumpSuit = card.suit;
         room.trumpMakerId = socket.id; 
         io.to(roomCode).emit('trumpUpdate', room.trumpSuit);
+
+        // NEW: Tell everyone to play the Trump sound!
+        io.to(roomCode).emit('audioEffect', 'trump');
       }
     }
 
@@ -108,6 +111,8 @@ io.on('connection', (socket) => {
       if (tensInTrick > 0) {
         if (winner.team === 'A') room.teamAScore += tensInTrick;
         if (winner.team === 'B') room.teamBScore += tensInTrick;
+        // NEW: Tell everyone to play the Mendicot sound!
+        io.to(roomCode).emit('audioEffect', 'mendicot');
       }
       io.to(roomCode).emit('scoreUpdate', { A: room.teamAScore, B: room.teamBScore });
 

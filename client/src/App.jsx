@@ -39,11 +39,21 @@ function App() {
       setTimeout(() => setRoundMessage(''), 5000)
     })
 
+    // NEW: Listen for the audio triggers from the server
+    socket.on('audioEffect', (effectName) => {
+      if (effectName === 'trump') {
+        new Audio('/trump.mp3').play().catch(e => console.log("Audio play failed:", e));
+      } else if (effectName === 'mendicot') {
+        new Audio('/trump.mp3').play().catch(e => console.log("Audio play failed:", e));
+      }
+    })
+
     return () => {
       socket.off('connect'); socket.off('disconnect'); socket.off('updatePlayers');
       socket.off('receiveCards'); socket.off('updateTable'); socket.off('turnUpdate'); 
       socket.off('scoreUpdate'); socket.off('trumpUpdate'); socket.off('errorMsg'); 
       socket.off('roundOver'); socket.off('updateHost');
+      socket.off('audioEffect');
     }
   }, [])
 

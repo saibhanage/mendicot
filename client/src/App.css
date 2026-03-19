@@ -1,216 +1,327 @@
-/* client/src/App.css */
+/* --- GLOBAL & TYPOGRAPHY --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+
 body {
   margin: 0;
-  background-color: #1e1e1e; /* Dark theme background */
-  color: white;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 0;
+  background-color: #121212;
+  color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  overflow: hidden; /* Prevents scrollbars during gameplay */
 }
 
 .app-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  min-height: 100vh;
+  height: 100vh;
+  width: 100vw;
 }
 
-/* --- LANDING PAGE --- */
+/* --- STATUS BAR --- */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.8);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #333;
+  z-index: 100;
+}
+
+/* --- LANDING & MENUS --- */
 .landing-container {
-  margin-top: 10vh;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  width: 100%;
-  max-width: 500px;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 30px;
+  background: radial-gradient(circle at center, #1a1a2e 0%, #16213e 100%);
 }
 
 .action-card {
-  background-color: #2a2a2a;
-  border: 1px solid #333;
-  border-radius: 10px;
-  padding: 30px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  padding: 40px;
+  border-radius: 20px;
   text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 400px;
+}
+
+.modern-input {
+  width: 100%;
+  padding: 15px;
+  margin: 10px 0 20px 0;
+  border-radius: 10px;
+  border: none;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 1.1rem;
+  box-sizing: border-box;
+  text-align: center;
+  outline: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: border 0.3s ease;
+}
+
+.modern-input:focus {
+  border: 1px solid #fbbf24; /* Gold highlight */
+}
+
+/* --- BUTTONS --- */
+button {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
 }
 
 .btn-primary {
-  background-color: #4ade80; /* Poker Now Green */
-  color: #000;
-  font-weight: bold;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
   border: none;
   padding: 15px 30px;
-  border-radius: 5px;
-  font-size: 1.2rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
   cursor: pointer;
   width: 100%;
-  transition: 0.2s;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
 }
 
 .btn-primary:hover {
-  background-color: #22c55e;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
 }
 
 .btn-secondary {
-  background-color: #4f46e5; /* Poker Now Blue/Purple */
+  background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
   color: white;
-  font-weight: bold;
   border: none;
   padding: 15px 30px;
-  border-radius: 5px;
-  font-size: 1.2rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
   cursor: pointer;
   width: 100%;
-  transition: 0.2s;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
 }
 
 .btn-secondary:hover {
-  background-color: #4338ca;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
 }
 
-input.modern-input {
-  width: 100%;
-  box-sizing: border-box;
-  background-color: #121212;
-  border: 1px solid #444;
-  color: white;
-  padding: 15px;
-  margin-bottom: 20px;
-  border-radius: 5px;
-  font-size: 1rem;
-}
-
-input.modern-input:focus {
-  outline: 1px solid #4ade80;
-}
-
-/* --- GAME TABLE --- */
+/* --- THE CASINO TABLE --- */
 .table-container {
-  width: 100%;
-  height: 100vh;
   display: flex;
-  justify-content: center;
+  flex: 1;
   align-items: center;
+  justify-content: center;
+  background: #121212;
   position: relative;
 }
 
 .poker-table {
-  width: 80vw;
+  width: 90vw;
   max-width: 900px;
-  height: 50vh;
-  background: radial-gradient(circle, #2e7d32 0%, #1b5e20 100%);
-  border-radius: 200px; /* Makes it a pill/oval shape */
-  border: 15px solid #111; /* Dark rim */
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  height: 55vh;
+  /* Premium green felt look */
+  background: radial-gradient(circle, #2a7a4b 0%, #144327 100%);
+  /* Wooden rim */
+  border: 12px solid #3e2723;
+  border-radius: 150px;
   position: relative;
-}
-
-/* --- OVERLAYS & MODALS --- */
-.waiting-modal {
-  background-color: white;
-  color: black;
-  padding: 20px 40px;
-  border-radius: 30px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  z-index: 10;
-}
-
-.waiting-modal h3 {
-  margin-top: 0;
-  color: #333;
-}
-
-.status-bar {
-  position: absolute;
-  top: 0;
-  width: 100%;
-  background: #111;
-  padding: 10px 20px;
   display: flex;
-  justify-content: space-between;
-  box-sizing: border-box;
-  font-size: 0.9rem;
-  color: #aaa;
-}
-/* --- PLAYER SEATS --- */
-.table-seat {
-  position: absolute;
-  transform: translate(-50%, -50%); /* Centers the seat exactly on its coordinates */
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 5px;
-  z-index: 20; /* Ensures seats sit above the table border */
+  justify-content: center;
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 20px 50px rgba(0,0,0,0.6);
 }
 
-.seat-avatar {
-  width: 60px;
-  height: 60px;
-  background-color: #333;
-  border: 3px solid #555;
-  border-radius: 50%;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-  transition: border-color 0.2s;
+/* Frosted glass modals for the table */
+.waiting-modal {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  padding: 30px;
+  border-radius: 20px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
-/* Make your own seat stand out */
-.table-seat:first-child .seat-avatar {
-  border-color: #4ade80; 
-}
-
-.seat-name {
-  background-color: rgba(0, 0, 0, 0.7);
-  padding: 4px 10px;
-  border-radius: 10px;
-  font-size: 0.85rem;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
 /* --- PLAYING CARDS --- */
+.hand-container {
+  height: 150px;
+  margin-top: -30px; /* Overlap the table slightly */
+  z-index: 20;
+}
+
 .playing-card {
   width: 80px;
-  height: 120px;
-  background-color: white; /* This is what makes the card visible! */
+  height: 115px;
+  background: white;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 10px;
-  font-size: 1.5rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: transform 0.2s;
-  user-select: none;
+  padding: 8px;
   box-sizing: border-box;
+  font-weight: 800;
+  font-size: 1.4rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  border: 1px solid #ddd;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy hover */
+  background-image: linear-gradient(135deg, #ffffff 0%, #f1f1f1 100%);
 }
 
-/* Makes the card pop up when you hover over it in your hand */
 .playing-card:hover {
-  transform: translateY(-15px);
-}
-
-/* Stops the cards on the table from popping up when hovered */
-.center-trick-area .playing-card:hover {
-  transform: scale(0.8);
-  cursor: default;
+  transform: translateY(-20px) scale(1.1) !important;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.6);
+  z-index: 100;
 }
 
 .card-top {
   text-align: left;
-  font-size: 1.2rem;
+  line-height: 1;
 }
 
 .card-middle {
   text-align: center;
   font-size: 2.5rem;
+  line-height: 1;
 }
 
 .card-bottom {
   text-align: right;
-  font-size: 1.2rem;
-  transform: rotate(180deg); /* Flips the bottom number upside down */
+  transform: rotate(180deg);
+  line-height: 1;
+}
+
+/* Animations for cards dropping into the trick */
+.center-trick-area .playing-card {
+  animation: dropCard 0.4s ease-out forwards;
+}
+
+@keyframes dropCard {
+  0% { transform: scale(1.5) translateY(-50px); opacity: 0; }
+  100% { transform: scale(0.8) translateY(0); opacity: 1; }
+}
+
+/* --- SEATING & AVATARS --- */
+.table-seat {
+  position: absolute;
+  transform: translate(-50%, -50%); /* Centers the avatar exactly on the math coordinate */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.seat-avatar {
+  width: 50px;
+  height: 50px;
+  background: #222;
+  border-radius: 50%;
+  border: 4px solid;
+  /* Add a subtle inner shadow to look like a profile picture slot */
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.seat-name {
+  background: rgba(0,0,0,0.7);
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  font-weight: bold;
+}
+
+/* Pulsing animation for the active player's turn */
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 10px #fbbf24, 0 0 20px #fbbf24; }
+  50% { box-shadow: 0 0 20px #fbbf24, 0 0 40px #fbbf24; transform: scale(1.05); }
+  100% { box-shadow: 0 0 10px #fbbf24, 0 0 20px #fbbf24; }
+}
+/* --- MOBILE RESPONSIVENESS (Phones & Tablets) --- */
+@media (max-width: 768px) {
+  /* Shrink the table and make the wooden rim thinner */
+  .poker-table {
+    width: 95vw;
+    height: 45vh;
+    border-width: 6px;
+    border-radius: 100px;
+  }
+
+  /* Make the cards smaller */
+  .playing-card {
+    width: 45px;
+    height: 65px;
+    padding: 4px;
+    font-size: 0.9rem;
+    border-radius: 5px;
+  }
+
+  .card-middle {
+    font-size: 1.5rem;
+  }
+
+  /* Overlap the cards in the player's hand so all 13 fit on a phone screen! */
+  .hand-container {
+    gap: 0px;
+    margin-top: 10px;
+    padding: 0 10px;
+  }
+  
+  .hand-container .playing-card {
+    margin-left: -20px; /* Slides each card to the left to overlap the previous one */
+    box-shadow: -2px 0 5px rgba(0,0,0,0.3); /* Adds a shadow so you can distinguish the edges */
+  }
+  
+  .hand-container .playing-card:first-child {
+    margin-left: 0; /* The first card stays in place */
+  }
+
+  .hand-container .playing-card:hover {
+    transform: translateY(-15px) scale(1.1) !important;
+    margin-right: 15px; /* Pushes the next card away so you can see the hovered card clearly */
+  }
+
+  /* Shrink the avatars and names */
+  .seat-avatar {
+    width: 35px;
+    height: 35px;
+    border-width: 2px;
+  }
+
+  .seat-name {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+
+  /* Adjust the scoreboard and trump indicator so they don't block the table */
+  .poker-table > div[style*="top: 20px"] {
+    top: 10px !important;
+    padding: 5px 10px !important;
+    font-size: 0.8rem !important;
+    flex-direction: column !important; /* Stack Team A and Team B scores vertically */
+    gap: 2px !important;
+  }
+
+  .poker-table > div[style*="top: 70px"] {
+    top: 60px !important;
+    padding: 3px 10px !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Make landing page panels fit the screen */
+  .action-card {
+    padding: 20px;
+    width: 85%;
+  }
+
+  h2 { font-size: 1.2rem; }
+  h3 { font-size: 1.1rem; }
 }

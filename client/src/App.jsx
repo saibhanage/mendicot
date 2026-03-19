@@ -233,7 +233,14 @@ function App() {
 
               return (
                 <div key={player.id} className="table-seat" style={{ left: `${leftPos}%`, top: `${topPos}%` }}>
-                  <div className="seat-avatar" style={{ borderColor: avatarBorder, boxShadow: player.id === currentTurnId ? '0 0 15px #fbbf24' : '0 5px 15px rgba(0,0,0,0.5)', transition: 'all 0.3s ease' }}></div>
+                  <div 
+                    className="seat-avatar"
+                    style={{ 
+                      borderColor: avatarBorder,
+                      animation: player.id === currentTurnId ? 'pulseGlow 1.5s infinite' : 'none',
+                      transition: 'all 0.3s ease'
+                    }}
+                  ></div>
                   {/* NEW: Add a little crown to the host's name on the table */}
                   <div className="seat-name">{player.id === hostId ? '👑 ' : ''}{player.name}</div>
                 </div>

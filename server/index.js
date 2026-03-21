@@ -27,7 +27,8 @@ io.on('connection', (socket) => {
         players: [], table: [], currentTurnIndex: 0,
         teamAScore: 0, teamBScore: 0, trumpSuit: null,
         trumpMakerId: null, tricksPlayed: 0,
-        hostId: socket.id // NEW: The person who creates the room is the Host!
+        hostId: socket.id, // NEW: The person who creates the room is the Host!
+        lastTrick: [] // NEW: Memory for the previous trick
       };
     }
     
@@ -103,6 +104,7 @@ io.on('connection', (socket) => {
     room.table.push({ ...card, playerId: socket.id });
     io.to(roomCode).emit('updateTable', room.table);
 
+    // TRICK COMPLETION
     if (room.table.length === room.players.length) {
       const winnerId = evaluateTrick(room.table, room.trumpSuit);
       const winner = room.players.find(p => p.id === winnerId);
@@ -111,10 +113,13 @@ io.on('connection', (socket) => {
       if (tensInTrick > 0) {
         if (winner.team === 'A') room.teamAScore += tensInTrick;
         if (winner.team === 'B') room.teamBScore += tensInTrick;
-        // NEW: Tell everyone to play the Mendicot sound!
         io.to(roomCode).emit('audioEffect', 'mendicot');
       }
       io.to(roomCode).emit('scoreUpdate', { A: room.teamAScore, B: room.teamBScore });
+
+      // NEW: Save the exact state of the table before we wipe it, and send it to everyone!
+      room.lastTrick = [...room.table];
+      io.to(roomCode).emit('lastTrickUpdate', room.lastTrick);
 
       setTimeout(() => {
         room.table = []; 

@@ -21,6 +21,9 @@ function App() {
   
   // NEW: Track the Host
   const [hostId, setHostId] = useState('')
+  // NEW STATES FOR LAST TRICK
+  const [lastTrick, setLastTrick] = useState([])
+  const [showLastTrick, setShowLastTrick] = useState(false)
 
   useEffect(() => {
     socket.on('connect', () => setIsConnected(true))
@@ -32,6 +35,7 @@ function App() {
     socket.on('scoreUpdate', setScores)
     socket.on('trumpUpdate', setTrumpSuit)
     socket.on('updateHost', setHostId) // Listen for the host!
+    socket.on('lastTrickUpdate', setLastTrick) // NEW LISTENER
     socket.on('errorMsg', alert)
 
     socket.on('roundOver', (msg) => {
@@ -54,6 +58,7 @@ function App() {
       socket.off('scoreUpdate'); socket.off('trumpUpdate'); socket.off('errorMsg'); 
       socket.off('roundOver'); socket.off('updateHost');
       socket.off('audioEffect');
+      socket.off('lastTrickUpdate');
     }
   }, [])
 
@@ -179,6 +184,33 @@ function App() {
               <div style={{ position: 'absolute', top: '70px', background: 'rgba(0,0,0,0.8)', padding: '5px 15px', borderRadius: '20px', border: `1px solid ${getSuitColor(trumpSuit)}`, zIndex: 10 }}>
                 Trump: <span style={{ color: getSuitColor(trumpSuit), fontSize: '1.2rem' }}>{getSuitSymbol(trumpSuit)}</span>
               </div>
+            )}
+            {/* NEW: LAST TRICK BUTTON & MODAL */}
+            {hand.length > 0 && lastTrick.length > 0 && (
+              <>
+                <button 
+                  style={{ position: 'absolute', top: '120px', left: '20px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '5px 10px', borderRadius: '8px', cursor: 'pointer', zIndex: 10, backdropFilter: 'blur(5px)' }}
+                  onClick={() => setShowLastTrick(true)}
+                >
+                  👁️ Last Trick
+                </button>
+
+                {showLastTrick && (
+                  <div className="waiting-modal" style={{ position: 'absolute', zIndex: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '80%', maxWidth: '400px' }}>
+                    <h3 style={{ marginTop: 0 }}>Previous Trick</h3>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '20px' }}>
+                      {lastTrick.map((card, index) => (
+                        <div key={index} className="playing-card" style={{ color: getSuitColor(card.suit), transform: 'scale(0.9)', margin: 0 }}>
+                          <div className="card-top">{card.value}</div>
+                          <div className="card-middle">{getSuitSymbol(card.suit)}</div>
+                          <div className="card-bottom">{card.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <button className="btn-secondary" style={{ padding: '8px 20px', fontSize: '1rem' }} onClick={() => setShowLastTrick(false)}>CLOSE</button>
+                  </div>
+                )}
+              </>
             )}
             
             {hand.length === 0 && !roundMessage && (
